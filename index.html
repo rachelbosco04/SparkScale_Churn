@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SparkScale · Churn Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#eef0f4;--sidebar:#18181b;--white:#fff;
+  --card-purple:linear-gradient(135deg,#c8b6e2 0%,#a89fd8 55%,#b4c6f0 100%);
+  --card-teal:linear-gradient(135deg,#9de8e0 0%,#6dd4cc 55%,#a4e8e4 100%);
+  --accent:#6dd4cc;--accent2:#b8a8d8;
+  --text:#1a1a2e;--mid:#55556a;--light:#9999b0;
+  --red:#e84f4f;--green:#2ecc7a;
+  --border:#e4e6ef;--sh:0 4px 28px rgba(0,0,0,.07);
+  --r:18px;--rs:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;display:flex;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:64px;background:var(--sidebar);border-radius:0 22px 22px 0;
+  display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:4px;
+  position:fixed;top:0;left:0;bottom:0;z-index:200;
+}
+.sb-icon{
+  width:42px;height:42px;border-radius:11px;display:flex;align-items:center;
+  justify-content:center;font-size:19px;color:#555;cursor:pointer;
+  transition:all .18s;position:relative;user-select:none;
+}
+.sb-icon:hover{background:#2a2a2e;color:#ccc;}
+.sb-icon.active{background:#2d2d32;color:#fff;box-shadow:0 0 0 2px var(--accent);}
+.sb-icon .tip{
+  position:absolute;left:54px;background:#111;color:#eee;font-size:11px;
+  padding:4px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;
+  opacity:0;transform:translateX(-4px);transition:all .15s;z-index:999;
+  font-family:'DM Sans',sans-serif;
+}
+.sb-icon:hover .tip{opacity:1;transform:translateX(0);}
+.sb-sep{width:28px;height:1px;background:#262626;margin:8px 0;}
+.sb-btm{margin-top:auto;}
+
+/* ── PANELS ── */
+.panel{display:none;flex:1;margin-left:64px;padding:26px 30px;max-width:1460px;}
+.panel.active{display:block;}
+
+/* ── HEADER ── */
+.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:26px;gap:20px;}
+.header h1{font-family:'DM Serif Display',serif;font-size:1.85rem;color:var(--text);line-height:1.2;margin-bottom:4px;}
+.header p{font-size:12px;color:var(--light);}
+.hdr-r{display:flex;align-items:center;gap:9px;flex-shrink:0;}
+.search-pill{
+  display:flex;align-items:center;gap:7px;background:var(--white);
+  border:1.5px solid var(--border);border-radius:50px;padding:8px 15px;
+  font-size:13px;color:var(--light);min-width:160px;
+}
+.search-pill input{border:none;outline:none;background:transparent;font-family:inherit;font-size:13px;color:var(--text);width:100%;}
+.tpill{display:flex;background:var(--white);border:1.5px solid var(--border);border-radius:50px;padding:4px;gap:3px;}
+.tbtn{padding:5px 12px;border-radius:50px;border:none;background:transparent;font-size:12px;font-family:inherit;cursor:pointer;color:var(--mid);transition:all .18s;}
+.tbtn.active{background:var(--accent);color:#fff;font-weight:600;}
+.cal-btn{width:36px;height:36px;border-radius:10px;background:var(--sidebar);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+
+/* ── DASH GRID ── */
+.dg{display:grid;grid-template-columns:1fr 1fr 1fr 282px;gap:16px;}
+
+/* ── STAT CARDS ── */
+.sc{border-radius:var(--r);padding:20px;min-height:144px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:var(--sh);position:relative;overflow:hidden;}
+.sc.pur{background:var(--card-purple);}
+.sc.tea{background:var(--card-teal);}
+.sc.wh{background:var(--white);border:1.5px solid var(--border);}
+.sc-lbl{font-size:12px;font-weight:500;color:rgba(26,26,46,.65);display:flex;align-items:center;justify-content:space-between;}
+.sc-num{font-size:2.2rem;font-weight:700;color:var(--text);}
+.sc-sub{font-size:11.5px;color:rgba(26,26,46,.5);margin-left:5px;}
+.mbars{display:flex;align-items:flex-end;gap:2.5px;height:30px;margin:5px 0;}
+.mbar{background:rgba(26,26,80,.18);border-radius:2px;flex:1;}
+
+/* ── FEATURE CARD ── */
+.feat{grid-row:1/3;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);}
+.feat-img{width:100%;height:192px;background:linear-gradient(135deg,#a0d8ea,#6dcfcf);display:flex;align-items:center;justify-content:center;font-size:52px;}
+.feat-body{background:var(--white);padding:13px;}
+.feat-tabs{display:flex;gap:6px;margin-bottom:11px;align-items:center;justify-content:space-between;}
+.ftab{padding:5px 13px;border-radius:50px;border:1.5px solid var(--border);background:transparent;font-size:11.5px;font-family:inherit;cursor:pointer;color:var(--mid);font-weight:500;transition:all .18s;}
+.ftab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.fdots{color:var(--light);cursor:pointer;font-size:15px;letter-spacing:1px;}
+.obj-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--rs);margin-bottom:5px;cursor:pointer;transition:background .18s;}
+.obj-row:hover{background:#f4f6fb;}
+.obj-row.sel{background:var(--sidebar);}
+.obj-thumb{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.obj-name{font-size:12.5px;font-weight:500;flex:1;color:var(--text);}
+.obj-row.sel .obj-name{color:#fff;}
+.obj-pct{font-size:12px;font-weight:700;color:var(--green);}
+.obj-row.sel .obj-pct{color:#7df0c0;}
+
+/* ── CHART ── */
+.chart-card{grid-column:1/4;background:var(--white);border-radius:var(--r);padding:22px 22px 14px;box-shadow:var(--sh);}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.chart-ttl{font-size:1rem;font-weight:600;color:var(--text);}
+.legend{display:flex;gap:12px;}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--mid);}
+.leg-dot{width:7px;height:7px;border-radius:50%;}
+.mnths{display:flex;justify-content:space-between;margin-top:6px;}
+.mn{font-size:10.5px;color:var(--light);}
+.mn.act{background:var(--sidebar);color:#fff;padding:2px 9px;border-radius:50px;}
+
+/* ── KPI ROW ── */
+.kpi-row{grid-column:1/5;display:grid;grid-template-columns:repeat(5,1fr);gap:13px;}
+.kpi{background:var(--white);border-radius:var(--rs);padding:16px 18px;box-shadow:var(--sh);border-left:4px solid var(--accent);}
+.kpi.red{border-left-color:var(--red);}
+.kpi.grn{border-left-color:var(--green);}
+.kpi.pur{border-left-color:var(--accent2);}
+.kpi.dk{border-left-color:#555;}
+.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--light);margin-bottom:4px;}
+.kpi-val{font-size:1.7rem;font-weight:700;color:var(--text);}
+.kpi-sub{font-size:10.5px;color:var(--light);margin-top:1px;}
+
+/* ── MID ROW ── */
+.mid-row{grid-column:1/5;display:grid;grid-template-columns:250px 1fr 1fr;gap:16px;}
+
+/* ── DONUT ── */
+.donut-card{background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);display:flex;flex-direction:column;align-items:center;}
+.donut-wrap{position:relative;width:150px;height:150px;margin:10px 0;}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.donut-pct{font-size:1.5rem;font-weight:800;color:var(--red);}
+.donut-tag{font-size:10.5px;color:var(--light);}
+.dleg-row{display:flex;gap:14px;margin-top:7px;}
+.dleg{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--mid);}
+.dleg-dot{width:9px;height:9px;border-radius:50%;}
+
+/* ── DIST ── */
+.dist-card{background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);}
+.sec-ttl{font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:14px;}
+.drow{display:flex;align-items:center;gap:9px;margin-bottom:11px;}
+.dlbl{font-size:11.5px;color:var(--mid);width:70px;flex-shrink:0;}
+.dtrk{flex:1;height:8px;background:#f0f2f6;border-radius:4px;overflow:hidden;}
+.dfill{height:100%;border-radius:4px;transition:width 1.3s cubic-bezier(.4,0,.2,1);}
+.dfill.h{background:linear-gradient(90deg,#e84f4f,#ff8080);}
+.dfill.l{background:linear-gradient(90deg,#2ecc7a,#7deab0);}
+.dpct{font-size:11.5px;font-weight:700;width:32px;text-align:right;}
+
+/* ── TABLE ── */
+.tbl-card{background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);}
+.rtbl{width:100%;border-collapse:collapse;}
+.rtbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--light);padding-bottom:8px;text-align:left;border-bottom:1.5px solid var(--border);}
+.rtbl td{padding:8px 0;font-size:12px;color:var(--mid);border-bottom:1px solid #f2f4f8;}
+.rtbl tr:last-child td{border-bottom:none;}
+.rbdg{display:inline-block;padding:2px 8px;border-radius:50px;font-size:10px;font-weight:700;}
+.rbdg.high{background:#ffeaea;color:var(--red);}
+.rbdg.low{background:#e6faef;color:var(--green);}
+.pbw{width:48px;height:5px;background:#eef0f6;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:4px;overflow:hidden;}
+.pbf{height:100%;border-radius:3px;}
+
+/* ── MODEL CARD ── */
+.model-card{grid-column:1/5;background:var(--sidebar);border-radius:var(--r);padding:22px 26px;box-shadow:var(--sh);display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
+.mc-grp{flex-shrink:0;}
+.mc-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#555;margin-bottom:3px;}
+.mc-val{font-size:1.45rem;font-weight:700;color:#fff;}
+.mc-sub{font-size:10.5px;color:#444;margin-top:1px;}
+.mc-sep{width:1px;height:44px;background:#252525;flex-shrink:0;}
+.live-badge{margin-left:auto;display:flex;align-items:center;gap:7px;background:#1f1f22;border-radius:9px;padding:8px 14px;flex-shrink:0;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.live-txt{font-size:12px;color:#666;font-weight:500;}
+
+/* ── PREDICT ── */
+.pred-sec{grid-column:1/5;background:var(--white);border-radius:var(--r);padding:26px 30px;box-shadow:var(--sh);}
+.pred-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;}
+.ig{display:flex;flex-direction:column;gap:5px;}
+.ilbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--light);}
+.ifld{border:1.5px solid var(--border);border-radius:var(--rs);padding:10px 13px;font-family:inherit;font-size:13px;color:var(--text);background:#fafbfd;transition:border .2s,box-shadow .2s;outline:none;appearance:none;}
+.ifld:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,212,204,.15);background:#fff;}
+.pred-btn{grid-column:1/4;padding:13px;background:var(--sidebar);color:#fff;border:none;border-radius:var(--rs);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:transform .15s,background .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.pred-btn:hover{background:#242428;transform:translateY(-1px);}
+
+/* ── POPUP ── */
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:500;display:none;align-items:center;justify-content:center;}
+.popup-overlay.show{display:flex;animation:bgfade .2s ease;}
+@keyframes bgfade{from{opacity:0;}to{opacity:1;}}
+.popup-box{
+  background:#fff;border-radius:22px;padding:32px 36px;max-width:460px;width:92%;
+  box-shadow:0 24px 64px rgba(0,0,0,.2);position:relative;
+  animation:popin .28s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popin{from{opacity:0;transform:scale(.88);}to{opacity:1;transform:scale(1);}}
+.pop-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:19px;color:var(--light);cursor:pointer;}
+.pop-close:hover{color:var(--text);}
+.pop-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:50px;font-size:11px;font-weight:700;margin-bottom:12px;}
+.pop-badge.hi{background:#ffeaea;color:var(--red);}
+.pop-badge.lo{background:#e6faef;color:var(--green);}
+.pop-badge.med{background:#fff4df;color:#f0b840;}
+.pop-pct{font-size:3.2rem;font-weight:800;line-height:1;}
+.pop-pct.hi{color:var(--red);}
+.pop-pct.lo{color:var(--green);}
+.pop-pct.med{color:#f0b840;}
+.pop-ttl{font-size:.95rem;font-weight:700;color:var(--text);margin:6px 0 3px;}
+.pop-sub{font-size:12.5px;color:var(--mid);line-height:1.55;}
+.pop-bar-wrap{width:100%;height:9px;background:#f0f2f6;border-radius:5px;margin:16px 0 8px;overflow:hidden;}
+.pop-bar{height:100%;border-radius:5px;transition:width 1s cubic-bezier(.4,0,.2,1);}
+.pop-bar.hi{background:linear-gradient(90deg,#e84f4f,#ff8585);}
+.pop-bar.lo{background:linear-gradient(90deg,#2ecc7a,#7deab0);}
+.pop-bar.med{background:linear-gradient(90deg,#f0b840,#ffd36b);}
+.pop-bar-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--light);margin-bottom:16px;}
+.pop-action{display:flex;align-items:flex-start;gap:10px;border-radius:11px;padding:13px 15px;}
+.pop-action.hi-a{background:#fff5f5;border:1px solid #ffd5d5;}
+.pop-action.lo-a{background:#f0faf6;border:1px solid #c0e8d0;}
+.pop-action.med-a{background:#fff9ef;border:1px solid #ffe0a3;}
+.pop-action-ico{font-size:19px;padding-top:1px;}
+.pop-action strong{display:block;font-size:13px;color:var(--text);margin-bottom:2px;}
+.pop-action span{font-size:12px;color:var(--mid);}
+.pop-dismiss{width:100%;margin-top:14px;padding:10px;border-radius:9px;border:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:var(--mid);cursor:pointer;transition:all .18s;}
+.pop-dismiss:hover{background:var(--sidebar);color:#fff;border-color:var(--sidebar);}
+
+@keyframes slideIn{
+  from{
+    opacity:0;
+    transform:translateY(-10px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+/* ── DATE FILTER POPUP ── */
+
+.date-popup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  backdrop-filter:blur(4px);
+}
+
+.date-popup.show{
+  display:flex;
+  animation:bgfade .2s ease;
+}
+
+.date-box-popup{
+  width:500px;
+  background:#fff;
+  border-radius:22px;
+  padding:28px;
+  box-shadow:0 24px 60px rgba(0,0,0,.18);
+  animation:popin .25s ease;
+}
+
+.date-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;
+}
+
+.date-top h3{
+  font-size:1.1rem;
+  color:var(--text);
+}
+
+.date-close{
+  border:none;
+  background:none;
+  font-size:20px;
+  cursor:pointer;
+  color:var(--light);
+}
+
+.date-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:22px;
+}
+
+.date-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.date-field label{
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--light);
+}
+
+.date-field input{
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  padding:11px 12px;
+  font-family:inherit;
+  font-size:13px;
+  background:#fafbfd;
+}
+
+.quick-range{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:22px;
+}
+
+.qrange-btn{
+  border:none;
+  background:#f3f4f8;
+  padding:8px 14px;
+  border-radius:50px;
+  font-size:11px;
+  font-weight:600;
+  color:var(--mid);
+  cursor:pointer;
+  transition:.18s;
+}
+
+.qrange-btn:hover{
+  background:var(--accent);
+  color:#fff;
+}
+
+.apply-date-btn{
+  width:100%;
+  border:none;
+  padding:13px;
+  border-radius:12px;
+  background:linear-gradient(135deg,#6dd4cc,#b8a8d8);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* ── PLACEHOLDER ── */
+.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px;text-align:center;}
+.ph-ico{font-size:50px;opacity:.3;}
+.ph h2{font-size:1.15rem;font-weight:600;color:var(--mid);}
+.ph p{font-size:12.5px;color:var(--light);max-width:300px;line-height:1.6;}
+
+/* ── FOOTER ── */
+.foot{margin-top:24px;text-align:center;font-size:11px;color:var(--light);padding-bottom:8px;}
+.foot strong{color:var(--mid);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:#d0d4e0;border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-icon active" onclick="showPanel('dashboard',this)">📡<span class="tip">Dashboard</span></div>
+  <div class="sb-icon" onclick="showPanel('analytics',this)">☕<span class="tip">Analytics</span></div>
+  <div class="sb-sep"></div>
+  <div class="sb-icon" onclick="showPanel('model',this)">📊<span class="tip">Model Stats</span></div>
+  <div class="sb-icon" onclick="showPanel('segments',this)">📍<span class="tip">Segments</span></div>
+  <div class="sb-icon sb-btm" onclick="showPanel('settings',this)">⚙️<span class="tip">Settings</span></div>
+</aside>
+
+<!-- PANEL: DASHBOARD -->
+<div class="panel active" id="panel-dashboard">
+
+  <div class="header">
+    <div>
+      <h1>Monitor health of<br>your business</h1>
+      <p>SparkScale Churn Prediction · Control and analyze your data in the easiest way</p>
+    </div>
+    <div class="hdr-r">
+      <div class="search-pill">🔍 <input placeholder="Search customer ID…" id="s-inp" oninput="filterTable(this.value)"/></div>
+      <div class="tpill">
+        <button class="tbtn active" onclick="setTime(this)">Week</button>
+        <button class="tbtn" onclick="setTime(this)">Month</button>
+        <button class="tbtn" onclick="setTime(this)">Year</button>
+      </div>
+      <button class="cal-btn">📅</button>
+    </div>
+  </div>
+
+  <div class="dg">
+
+    <!-- stat cards -->
+    <div class="sc pur">
+      <div class="sc-lbl">Total Customers <span>🌐</span></div>
+      <div><span class="sc-num">1,842</span><span class="sc-sub">+42 this week</span></div>
+    </div>
+    <div class="sc tea">
+      <div class="sc-lbl">High Churn Risk <span>⚡</span></div>
+      <div class="mbars" id="minibar"></div>
+      <div><span class="sc-num">389</span><span class="sc-sub">+11 last day</span></div>
+    </div>
+    <div class="sc wh">
+      <div class="sc-lbl">Avg Churn Probability <span>📈</span></div>
+      <div><span class="sc-num">42%</span><span class="sc-sub">+3% vs last week</span></div>
+    </div>
+
+    <!-- feature card -->
+    <div class="feat" style="grid-column:4;grid-row:1/3;">
+      <div class="feat-img">🏙️</div>
+      <div class="feat-body">
+        <div class="feat-tabs">
+          <div style="display:flex;gap:5px">
+            <button class="ftab active" onclick="switchFeat(this,'objects')">Objects</button>
+            <button class="ftab" onclick="switchFeat(this,'segments')">Segments</button>
+          </div>
+          <span class="fdots">···</span>
+        </div>
+        <div id="view-objects">
+          <div class="obj-row sel" onclick="pickObj(this)">
+            <div class="obj-thumb" style="background:linear-gradient(135deg,#9de8e0,#6dcfcf)">🏢</div>
+            <span class="obj-name">Enterprise</span>
+            <span class="obj-pct">▲ 25%</span>
+          </div>
+          <div class="obj-row" onclick="pickObj(this)">
+            <div class="obj-thumb" style="background:linear-gradient(135deg,#c8b6e2,#a89fd8)">🏠</div>
+            <span class="obj-name">SMB</span>
+            <span class="obj-pct">▲ 18%</span>
+          </div>
+          <div class="obj-row" onclick="pickObj(this)">
+            <div class="obj-thumb" style="background:linear-gradient(135deg,#9de8e0,#b8a8d8)">👤</div>
+            <span class="obj-name">Consumer</span>
+            <span class="obj-pct">▲ 12%</span>
+          </div>
+        </div>
+        <div id="view-segments" style="display:none">
+          <div class="obj-row sel" onclick="pickObj(this)">
+            <div class="obj-thumb" style="background:linear-gradient(135deg,#e84f4f,#ff8585)">🔴</div>
+            <span class="obj-name">Critical</span>
+            <span class="obj-pct" style="color:#ff8585">▲ 42%</span>
+          </div>
+          <div class="obj-row" onclick="pickObj(this)">
+            <div class="obj-thumb" style="background:linear-gradient(135deg,#f0b840,#f8d880)">🟡</div>
+            <span class="obj-name">At Risk</span>
+            <span class="obj-pct" style="color:#f0b840">▲ 29%</span>
+          </div>
+          <div class="obj-row" onclick="pickObj(this)">
+            <div class="obj-thumb" style="background:linear-gradient(135deg,#2ecc7a,#7deab0)">🟢</div>
+            <span class="obj-name">Stable</span>
+            <span class="obj-pct">▲ 8%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- line chart -->
+    <div class="chart-card" style="grid-column:1/4">
+      <div class="chart-hdr">
+        <span class="chart-ttl">Churn Risk Over Time</span>
+        <div class="legend">
+          <div class="leg"><div class="leg-dot" style="background:var(--accent)"></div>High Risk</div>
+          <div class="leg"><div class="leg-dot" style="background:var(--accent2)"></div>Low Risk</div>
+        </div>
+      </div>
+      <canvas id="lineChart" height="82"></canvas>
+      <div class="mnths">
+        <span class="mn">Jun</span><span class="mn">Jul</span><span class="mn">Aug</span>
+        <span class="mn">Sep</span><span class="mn act">Oct</span><span class="mn">Nov</span>
+        <span class="mn">Dec</span><span class="mn">Jan</span>
+      </div>
+    </div>
+
+    <!-- KPI row -->
+    <div class="kpi-row">
+      <div class="kpi pur">
+        <div class="kpi-lbl">Total Customers</div>
+        <div class="kpi-val">1,842</div>
+        <div class="kpi-sub">All segments</div>
+      </div>
+      <div class="kpi red">
+        <div class="kpi-lbl">High Risk</div>
+        <div class="kpi-val" style="color:var(--red)">389</div>
+        <div class="kpi-sub">Prediction = 1</div>
+      </div>
+      <div class="kpi grn">
+        <div class="kpi-lbl">Low Risk</div>
+        <div class="kpi-val" style="color:var(--green)">1,453</div>
+        <div class="kpi-sub">Prediction = 0</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">Avg Churn Prob</div>
+        <div class="kpi-val">42%</div>
+        <div class="kpi-sub">LR + RF ensemble</div>
+      </div>
+      <div class="kpi dk">
+        <div class="kpi-lbl">Churn Rate Δ</div>
+        <div class="kpi-val">+3.2%</div>
+        <div class="kpi-sub">vs prior period</div>
+      </div>
+    </div>
+
+    <!-- mid row -->
+    <div class="mid-row">
+
+      <!-- donut -->
+      <div class="donut-card">
+        <div class="sec-ttl">🍩 Risk Split</div>
+        <div class="donut-wrap">
+          <canvas id="donutChart" width="150" height="150"></canvas>
+          <div class="donut-center">
+            <div class="donut-pct">21%</div>
+            <div class="donut-tag">High Risk</div>
+          </div>
+        </div>
+        <div class="dleg-row">
+          <div class="dleg"><div class="dleg-dot" style="background:var(--red)"></div>High</div>
+          <div class="dleg"><div class="dleg-dot" style="background:var(--green)"></div>Low</div>
+        </div>
+      </div>
+
+      <!-- distribution + drivers -->
+      <div class="dist-card">
+        <div class="sec-ttl">⚠️ Risk Distribution</div>
+        <div class="drow">
+          <span class="dlbl">High Risk</span>
+          <div class="dtrk"><div class="dfill h" id="dh" style="width:0%"></div></div>
+          <span class="dpct" style="color:var(--red)">21%</span>
+        </div>
+        <div class="drow">
+          <span class="dlbl">Low Risk</span>
+          <div class="dtrk"><div class="dfill l" id="dl" style="width:0%"></div></div>
+          <span class="dpct" style="color:var(--green)">79%</span>
+        </div>
+        <div style="margin-top:18px">
+          <div class="sec-ttl" style="font-size:.82rem;margin-bottom:9px">Top Churn Drivers</div>
+          <div class="drow"><span class="dlbl" style="font-size:11px">Month-to-Mo.</span><div class="dtrk"><div class="dfill h" style="width:68%"></div></div><span class="dpct" style="color:var(--red);font-size:11px">68%</span></div>
+          <div class="drow"><span class="dlbl" style="font-size:11px">Fiber Optic</span><div class="dtrk"><div class="dfill h" style="width:52%"></div></div><span class="dpct" style="color:var(--red);font-size:11px">52%</span></div>
+          <div class="drow"><span class="dlbl" style="font-size:11px">E-Check Pay</span><div class="dtrk"><div class="dfill h" style="width:44%"></div></div><span class="dpct" style="color:var(--red);font-size:11px">44%</span></div>
+          <div class="drow"><span class="dlbl" style="font-size:11px">No Support</span><div class="dtrk"><div class="dfill h" style="width:38%"></div></div><span class="dpct" style="color:var(--red);font-size:11px">38%</span></div>
+        </div>
+      </div>
+
+      <!-- table -->
+      <div class="tbl-card">
+        <div class="sec-ttl">🚨 High Risk Customers</div>
+        <table class="rtbl">
+          <thead>
+            <tr>
+              <th>Customer ID</th>
+              <th>Tenure</th>
+              <th>Prob</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="rtbody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /mid-row -->
+
+    <!-- model performance -->
+    <div class="model-card">
+      <div class="mc-grp">
+        <div class="mc-lbl">Model</div>
+        <div class="mc-val">LR + Random Forest</div>
+        <div class="mc-sub">PySpark MLlib · Binary</div>
+      </div>
+      <div class="mc-sep"></div>
+      <div class="mc-grp">
+        <div class="mc-lbl">LR AUC Score</div>
+        <div class="mc-val" style="color:var(--accent)">0.8269</div>
+        <div class="mc-sub">ROC-AUC · Test set</div>
+      </div>
+      <div class="mc-sep"></div>
+      <div class="mc-grp">
+        <div class="mc-lbl">Random Forest AUC</div>
+        <div class="mc-val" style="color:#b8a8d8">0.8400</div>
+        <div class="mc-sub">100 trees · Depth 10</div>
+      </div>
+      <div class="mc-sep"></div>
+      <div class="mc-grp">
+        <div class="mc-lbl">Cluster Size</div>
+        <div class="mc-val" style="color:#f0b840">2 Workers</div>
+        <div class="mc-sub">Apache Spark 3.x</div>
+      </div>
+      <div class="mc-sep"></div>
+      <div class="mc-grp">
+        <div class="mc-lbl">Features Used</div>
+        <div class="mc-val">19</div>
+        <div class="mc-sub">Encoded + scaled</div>
+      </div>
+      <div class="live-badge" style="margin-left:auto">
+        <div class="live-dot"></div>
+        <span class="live-txt">Live inference ready</span>
+      </div>
+    </div>
+
+    <!-- predict -->
+    <div class="pred-sec">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div class="sec-ttl" style="font-size:1rem;margin:0">🔮 Predict Single Customer</div>
+        <span style="font-size:11px;color:var(--light)">Real-time churn likelihood · Apache Spark + MLlib</span>
+      </div>
+      <div class="pred-grid">
+        <div class="ig"><label class="ilbl">Tenure (months)</label><input type="number" class="ifld" id="in-tenure" placeholder="e.g. 24" min="0" max="72"/></div>
+        <div class="ig"><label class="ilbl">Monthly Charges ($)</label><input type="number" class="ifld" id="in-monthly" placeholder="e.g. 65.50" step="0.01"/></div>
+        <div class="ig"><label class="ilbl">Total Charges ($)</label><input type="number" class="ifld" id="in-total" placeholder="e.g. 1572" step="0.01"/></div>
+        <div class="ig"><label class="ilbl">Contract Type</label>
+          <select class="ifld" id="in-contract"><option value="">Select</option><option value="month-to-month">Month-to-Month</option><option value="one-year">One Year</option><option value="two-year">Two Year</option></select>
+        </div>
+        <div class="ig"><label class="ilbl">Internet Service</label>
+          <select class="ifld" id="in-internet"><option value="">Select</option><option value="fiber">Fiber Optic</option><option value="dsl">DSL</option><option value="no">No Internet</option></select>
+        </div>
+        <div class="ig"><label class="ilbl">Tech Support</label>
+          <select class="ifld" id="in-support"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </div>
+        <div class="ig"><label class="ilbl">Payment Method</label>
+          <select class="ifld" id="in-payment"><option value="">Select</option><option value="electronic">Electronic Check</option><option value="mailed">Mailed Check</option><option value="bank">Bank Transfer</option><option value="credit">Credit Card</option></select>
+        </div>
+        <div class="ig"><label class="ilbl">Paperless Billing</label>
+          <select class="ifld" id="in-paperless"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </div>
+        <div class="ig"><label class="ilbl">Number of Services</label><input type="number" class="ifld" id="in-products" placeholder="e.g. 3" min="1" max="8"/></div>
+        <button class="pred-btn" onclick="predictChurn()">⚡ Run Churn Prediction</button>
+      </div>
+    </div>
+
+    <div class="foot" style="grid-column:1/5">
+      Built with <strong>Apache Spark 3.x</strong> · <strong>PySpark MLlib</strong> · <strong>Logistic Regression</strong> · <strong>Random Forest</strong> · <strong>K-Means Clustering</strong>
+    </div>
+
+  </div><!-- /dg -->
+</div><!-- /panel-dashboard -->
+
+<!-- ══════════ PANEL: ANALYTICS ══════════ -->
+<div class="panel" id="panel-analytics">
+  <div class="header">
+    <div><h1>Analytics</h1><p>Cohort retention, monthly churn trends, and segment-level breakdowns</p></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <!-- Monthly Churn Trend -->
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);">
+      <div class="chart-hdr"><span class="chart-ttl">📉 Monthly Churn Rate (%)</span>
+        <div class="legend"><div class="leg"><div class="leg-dot" style="background:var(--red)"></div>Churn %</div></div>
+      </div>
+      <canvas id="churnTrendChart" height="130"></canvas>
+    </div>
+    <!-- Revenue at Risk -->
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);">
+      <div class="chart-hdr"><span class="chart-ttl">💸 Revenue at Risk ($)</span>
+        <div class="legend"><div class="leg"><div class="leg-dot" style="background:var(--accent2)"></div>Monthly</div></div>
+      </div>
+      <canvas id="revenueChart" height="130"></canvas>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+    <!-- Cohort Table -->
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);grid-column:1/3;">
+      <div class="sec-ttl" style="margin-bottom:14px">🗓️ Cohort Retention by Signup Month</div>
+      <table class="rtbl" id="cohort-table">
+        <thead><tr>
+          <th>Cohort</th><th>Month 1</th><th>Month 2</th><th>Month 3</th><th>Month 6</th><th>Month 12</th>
+        </tr></thead>
+        <tbody id="cohort-body"></tbody>
+      </table>
+    </div>
+    <!-- Churn by Contract -->
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:14px">📋 Churn by Contract</div>
+      <div id="contract-bars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PANEL: MODEL STATS ══════════ -->
+<div class="panel" id="panel-model">
+  <div class="header">
+    <div><h1>Model Statistics</h1><p>PySpark MLlib · Logistic Regression + Random Forest · AUC-ROC analysis</p></div>
+  </div>
+  <!-- Score cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;">
+    <div class="kpi" style="border-left-color:var(--accent)"><div class="kpi-lbl">LR AUC-ROC</div><div class="kpi-val" style="color:var(--accent)">0.8269</div><div class="kpi-sub">Logistic Regression</div></div>
+    <div class="kpi" style="border-left-color:var(--accent2)"><div class="kpi-lbl">RF AUC-ROC</div><div class="kpi-val" style="color:var(--accent2)">0.8400</div><div class="kpi-sub">Random Forest</div></div>
+    <div class="kpi" style="border-left-color:var(--green)"><div class="kpi-lbl">RF Precision</div><div class="kpi-val" style="color:var(--green)">0.79</div><div class="kpi-sub">Class 1 (Churn)</div></div>
+    <div class="kpi" style="border-left-color:var(--red)"><div class="kpi-lbl">RF Recall</div><div class="kpi-val" style="color:var(--red)">0.61</div><div class="kpi-sub">Class 1 (Churn)</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+    <!-- Feature Importance -->
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:16px">🎯 Feature Importance (RF)</div>
+      <div id="feat-imp"></div>
+    </div>
+    <!-- Confusion Matrix -->
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:16px">🔢 Confusion Matrix</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px;">
+        <div style="text-align:center;font-size:10px;color:var(--light);margin-bottom:4px;grid-column:1/3;padding-left:60px">Predicted</div>
+        <div style="background:#e6faef;border-radius:10px;padding:18px 10px;text-align:center;">
+          <div style="font-size:1.6rem;font-weight:800;color:var(--green)">1,312</div>
+          <div style="font-size:10px;color:var(--mid);margin-top:3px">True Negative</div>
+        </div>
+        <div style="background:#fff5f5;border-radius:10px;padding:18px 10px;text-align:center;">
+          <div style="font-size:1.6rem;font-weight:800;color:#f0b840">141</div>
+          <div style="font-size:10px;color:var(--mid);margin-top:3px">False Positive</div>
+        </div>
+        <div style="background:#fff5f5;border-radius:10px;padding:18px 10px;text-align:center;">
+          <div style="font-size:1.6rem;font-weight:800;color:#f0a844">152</div>
+          <div style="font-size:10px;color:var(--mid);margin-top:3px">False Negative</div>
+        </div>
+        <div style="background:#e6faef;border-radius:10px;padding:18px 10px;text-align:center;">
+          <div style="font-size:1.6rem;font-weight:800;color:var(--green)">237</div>
+          <div style="font-size:10px;color:var(--mid);margin-top:3px">True Positive</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:11px;color:var(--light);text-align:center">Accuracy: 83.6% · F1-Score: 0.72</div>
+    </div>
+    <!-- ROC Curve -->
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:16px">📈 ROC Curve</div>
+      <canvas id="rocChart" height="200"></canvas>
+      <div style="text-align:center;font-size:11px;color:var(--light);margin-top:8px">AUC = 0.84 (Random Forest)</div>
+    </div>
+  </div>
+  <!-- Spark cluster info -->
+  <div style="background:var(--sidebar);border-radius:var(--r);padding:20px 24px;margin-top:16px;display:flex;gap:28px;align-items:center;flex-wrap:wrap;box-shadow:var(--sh);">
+    <div class="mc-grp"><div class="mc-lbl">Spark Version</div><div class="mc-val">3.4.1</div></div>
+    <div class="mc-sep"></div>
+    <div class="mc-grp"><div class="mc-lbl">Workers</div><div class="mc-val" style="color:#f0b840">2 Nodes</div></div>
+    <div class="mc-sep"></div>
+    <div class="mc-grp"><div class="mc-lbl">Executors</div><div class="mc-val" style="color:var(--accent)">4</div></div>
+    <div class="mc-sep"></div>
+    <div class="mc-grp"><div class="mc-lbl">Training Time</div><div class="mc-val">2m 14s</div></div>
+    <div class="mc-sep"></div>
+    <div class="mc-grp"><div class="mc-lbl">Dataset Rows</div><div class="mc-val">7,043</div></div>
+    <div class="mc-sep"></div>
+    <div class="mc-grp"><div class="mc-lbl">Train / Test Split</div><div class="mc-val">80 / 20</div></div>
+    <div class="live-badge" style="margin-left:auto"><div class="live-dot"></div><span class="live-txt">MLlib Pipeline Active</span></div>
+  </div>
+</div>
+
+<!-- ══════════ PANEL: SEGMENTS ══════════ -->
+<div class="panel" id="panel-segments">
+  <div class="header">
+    <div><h1>Customer Segments</h1><p>K-Means clustering · 2-worker Spark job · Customer micro-segment profiles</p></div>
+  </div>
+  <!-- Cluster cards -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;" id="cluster-cards"></div>
+  <!-- Segment breakdown chart + table -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:16px">📊 Cluster Size Distribution</div>
+      <canvas id="clusterChart" height="200"></canvas>
+    </div>
+    <div style="background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:14px">🔬 Segment Profiles</div>
+      <table class="rtbl">
+        <thead><tr><th>Cluster</th><th>Avg Tenure</th><th>Avg Monthly</th><th>Churn Rate</th><th>Size</th></tr></thead>
+        <tbody id="seg-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PANEL: SETTINGS ══════════ -->
+<div class="panel" id="panel-settings">
+  <div class="header">
+    <div><h1>Settings</h1><p>Model thresholds, notification rules, and API configuration</p></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <!-- Model Thresholds -->
+    <div style="background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:18px">🎛️ Model Thresholds</div>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:12.5px;color:var(--mid);font-weight:500">Churn Risk Threshold</span><span style="font-size:12.5px;font-weight:700;color:var(--red)" id="thresh-val">0.50</span></div>
+          <input type="range" min="0.1" max="0.9" step="0.05" value="0.50" style="width:100%;accent-color:var(--accent)" oninput="document.getElementById('thresh-val').textContent=parseFloat(this.value).toFixed(2)"/>
+          <div style="font-size:10.5px;color:var(--light);margin-top:3px">Customers above this probability are flagged as High Risk</div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:12.5px;color:var(--mid);font-weight:500">Alert Sensitivity</span><span style="font-size:12.5px;font-weight:700;color:var(--accent)" id="sens-val">High</span></div>
+          <input type="range" min="1" max="3" step="1" value="3" style="width:100%;accent-color:var(--accent)" oninput="document.getElementById('sens-val').textContent=['Low','Medium','High'][this.value-1]"/>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:12.5px;color:var(--mid);font-weight:500">Max Risk Customers Shown</span><span style="font-size:12.5px;font-weight:700;color:var(--mid)" id="maxcust-val">50</span></div>
+          <input type="range" min="10" max="200" step="10" value="50" style="width:100%;accent-color:var(--accent)" oninput="document.getElementById('maxcust-val').textContent=this.value"/>
+        </div>
+      </div>
+    </div>
+    <!-- Notification Rules -->
+    <div style="background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:18px">🔔 Notification Rules</div>
+      <div style="display:flex;flex-direction:column;gap:14px;" id="notif-rules"></div>
+    </div>
+    <!-- API Config -->
+    <div style="background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:18px">🔌 API Configuration</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="ig"><label class="ilbl">Spark Master URL</label><input class="ifld" value="spark://localhost:7077" readonly style="font-family:monospace;font-size:12px;color:var(--accent)"/></div>
+        <div class="ig"><label class="ilbl">Model Path</label><input class="ifld" value="/models/rf_churn_v3.pkl" readonly style="font-family:monospace;font-size:12px"/></div>
+        <div class="ig"><label class="ilbl">Data Source</label><input class="ifld" value="data/predictions/daily_churn_predictions.csv" readonly style="font-family:monospace;font-size:12px"/></div>
+        <div class="ig"><label class="ilbl">Refresh Interval</label>
+          <select class="ifld"><option>Every 1 hour</option><option selected>Every 6 hours</option><option>Daily</option></select>
+        </div>
+      </div>
+    </div>
+    <!-- Model version -->
+    <div style="background:var(--sidebar);border-radius:var(--r);padding:24px;box-shadow:var(--sh);">
+      <div class="sec-ttl" style="margin-bottom:18px;color:#aaa">📦 Deployed Model Versions</div>
+      <div style="display:flex;flex-direction:column;gap:10px;" id="model-versions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT POPUP -->
+<div class="popup-overlay" id="popup" onclick="closePopup(event)">
+  <div class="popup-box">
+    <button class="pop-close" onclick="closePopup(null,true)">✕</button>
+    <div class="pop-badge" id="pop-badge">⚠️ HIGH RISK</div>
+    <div class="pop-pct" id="pop-pct">—</div>
+    <div class="pop-ttl" id="pop-ttl">Customer Risk Level</div>
+    <div class="pop-sub" id="pop-sub">Running prediction…</div>
+    <div class="pop-bar-wrap"><div class="pop-bar" id="pop-bar" style="width:0%"></div></div>
+    <div class="pop-bar-labels"><span>0%</span><span>Churn Probability</span><span>100%</span></div>
+    <div class="pop-action" id="pop-action">
+      <div class="pop-action-ico" id="pop-ico">💡</div>
+      <div>
+        <strong id="pop-action-ttl">Suggested Action</strong>
+        <span id="pop-action-desc">Loading…</span>
+      </div>
+    </div>
+    <button class="pop-dismiss" onclick="closePopup(null,true)">Close Prediction</button>
+  </div>
+</div>
+
+<!-- DATE FILTER POPUP -->
+
+<div class="date-popup" id="datePopup">
+
+  <div class="date-box-popup">
+
+    <div class="date-top">
+      <h3>📅 Select Analytics Date Range</h3>
+      <button class="date-close" id="closeDatePopup">✕</button>
+    </div>
+
+    <div class="date-grid">
+
+      <div class="date-field">
+        <label>From Date</label>
+        <input type="date" id="fromDate" value="2024-01-01">
+      </div>
+
+      <div class="date-field">
+        <label>To Date</label>
+        <input type="date" id="toDate" value="2025-12-31">
+      </div>
+
+    </div>
+
+    <div class="quick-range">
+
+      <button class="qrange-btn">Last 7 Days</button>
+      <button class="qrange-btn">Last 30 Days</button>
+      <button class="qrange-btn">Last 90 Days</button>
+      <button class="qrange-btn">This Year</button>
+
+    </div>
+
+    <button class="apply-date-btn" id="applyDateBtn">
+      Apply Analytics Filter
+    </button>
+
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ─── REAL IBM TELCO CUSTOMER IDs ────────────────────────────
+const CUSTOMERS = [
+  {id:'7590-VHVEG',tenure:1, monthly:29.85,prob:.89,risk:'high',contract:'Month-to-Month'},
+  {id:'5575-GNVDE',tenure:34,monthly:56.95,prob:.76,risk:'high',contract:'Month-to-Month'},
+  {id:'3668-QPYBK',tenure:2, monthly:53.85,prob:.82,risk:'high',contract:'Month-to-Month'},
+  {id:'9237-HQITU',tenure:2, monthly:70.70,prob:.91,risk:'high',contract:'Month-to-Month'},
+  {id:'9305-CDSKC',tenure:8, monthly:99.65,prob:.73,risk:'high',contract:'Month-to-Month'},
+  {id:'7892-POOKP',tenure:28,monthly:104.8,prob:.88,risk:'high',contract:'Month-to-Month'},
+  {id:'7795-CFOCW',tenure:45,monthly:42.30,prob:.11,risk:'low', contract:'One Year'},
+  {id:'1452-KIOVK',tenure:22,monthly:89.10,prob:.34,risk:'low', contract:'One Year'},
+  {id:'6713-OKOMC',tenure:10,monthly:29.75,prob:.21,risk:'low', contract:'Two Year'},
+  {id:'6388-TABGU',tenure:62,monthly:56.15,prob:.08,risk:'low', contract:'Two Year'},
+];
+
+// ─── MINI BARS ──────────────────────────────────────────────
+[35,55,40,75,50,68,42,82,58,63].forEach(h=>{
+  const b=document.createElement('div');
+  b.className='mbar';b.style.height=h+'%';
+  document.getElementById('minibar').appendChild(b);
+});
+
+// ─── DIST BARS ──────────────────────────────────────────────
+setTimeout(()=>{
+  document.getElementById('dh').style.width='21%';
+  document.getElementById('dl').style.width='79%';
+},300);
+
+// ─── TABLE ──────────────────────────────────────────────────
+function renderTable(data){
+  const tbody=document.getElementById('rtbody');
+  tbody.innerHTML='';
+  data.slice(0,8).forEach(c=>{
+    const pct=Math.round(c.prob*100);
+    const fc=c.risk==='high'?'#e84f4f':'#2ecc7a';
+    tbody.innerHTML+=`<tr>
+      <td><strong style="font-family:monospace;font-size:11.5px;letter-spacing:.02em">${c.id}</strong></td>
+      <td>${c.tenure} mo</td>
+      <td><span class="pbw"><span class="pbf" style="width:${pct}%;background:${fc};height:100%;display:block;border-radius:3px"></span></span><span style="font-weight:700;color:${fc};font-size:11.5px">${c.prob.toFixed(2)}</span></td>
+      <td><span class="rbdg ${c.risk}">${c.risk==='high'?'⬆ High':'⬇ Low'}</span></td>
+    </tr>`;
+  });
+}
+renderTable(CUSTOMERS);
+
+function filterTable(q){
+  const r=CUSTOMERS.filter(c=>c.id.toLowerCase().includes(q.toLowerCase()));
+  renderTable(r.length?r:CUSTOMERS);
+}
+
+// ─── LINE CHART ─────────────────────────────────────────────
+const lbl=['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan'];
+const wave=(b,a,o)=>lbl.map((_,i)=>b+a*Math.sin((i+o)*.9));
+new Chart(document.getElementById('lineChart').getContext('2d'),{
+  type:'line',
+  data:{labels:lbl,datasets:[
+    {label:'High Risk',data:wave(300,180,0),borderColor:'#6dd4cc',backgroundColor:'rgba(109,212,204,.09)',tension:.5,fill:true,borderWidth:2.5,pointBackgroundColor:'#6dd4cc',pointRadius:3},
+    {label:'Low Risk', data:wave(200,100,2),borderColor:'#b8a8d8',backgroundColor:'rgba(184,168,216,.07)',tension:.5,fill:true,borderWidth:2.5,pointBackgroundColor:'#b8a8d8',pointRadius:3}
+  ]},
+  options:{responsive:true,plugins:{legend:{display:false},tooltip:{mode:'index'}},scales:{x:{display:false},y:{display:false}}}
+});
+
+// ─── DONUT CHART ────────────────────────────────────────────
+new Chart(document.getElementById('donutChart').getContext('2d'),{
+  type:'doughnut',
+  data:{labels:['High Risk','Low Risk'],datasets:[{data:[389,1453],backgroundColor:['#e84f4f','#2ecc7a'],borderWidth:0,hoverOffset:5}]},
+  options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw.toLocaleString()}`}}},animation:{animateRotate:true,duration:1200}}
+});
+
+// ─── SIDEBAR NAV ────────────────────────────────────────────
+function showPanel(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-icon').forEach(i=>i.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ─── DATE FILTER POPUP ─────────────────────────────
+
+const calBtn = document.querySelector('.cal-btn');
+const datePopup = document.getElementById('datePopup');
+const closeDatePopup = document.getElementById('closeDatePopup');
+const applyDateBtn = document.getElementById('applyDateBtn');
+
+calBtn.addEventListener('click', ()=>{
+  datePopup.classList.add('show');
+});
+
+closeDatePopup.addEventListener('click', ()=>{
+  datePopup.classList.remove('show');
+});
+
+applyDateBtn.addEventListener('click', ()=>{
+
+  const from = document.getElementById('fromDate').value;
+  const to   = document.getElementById('toDate').value;
+
+  const successMsg = document.createElement('div');
+
+successMsg.innerHTML = `
+<div style="
+position:fixed;
+top:24px;
+right:24px;
+background:#18181b;
+color:white;
+padding:14px 18px;
+border-radius:14px;
+box-shadow:0 10px 30px rgba(0,0,0,.18);
+font-size:13px;
+font-weight:500;
+z-index:99999;
+display:flex;
+align-items:center;
+gap:10px;
+animation:slideIn .25s ease;
+">
+  ✅ Analytics updated from ${from} → ${to}
+</div>
+`;
+
+document.body.appendChild(successMsg);
+
+setTimeout(()=>{
+  successMsg.remove();
+},3000);
+
+  datePopup.classList.remove('show');
+});
+
+datePopup.addEventListener('click',(e)=>{
+  if(e.target===datePopup){
+    datePopup.classList.remove('show');
+  }
+});
+
+// QUICK FILTERS
+
+document.querySelectorAll('.qrange-btn').forEach(btn=>{
+
+  btn.addEventListener('click', ()=>{
+
+    const today = new Date();
+    let from = new Date();
+
+    if(btn.innerText.includes('7')){
+      from.setDate(today.getDate()-7);
+    }
+
+    else if(btn.innerText.includes('30')){
+      from.setDate(today.getDate()-30);
+    }
+
+    else if(btn.innerText.includes('90')){
+      from.setDate(today.getDate()-90);
+    }
+
+    else{
+      from = new Date(today.getFullYear(),0,1);
+    }
+
+    document.getElementById('fromDate').value =
+      from.toISOString().split('T')[0];
+
+    document.getElementById('toDate').value =
+      today.toISOString().split('T')[0];
+
+  });
+
+});
+
+// ─── TIME FILTER ────────────────────────────────────────────
+function setTime(el){
+   document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+   el.classList.add('active');
+}
+
+// ─── FEAT TABS ──────────────────────────────────────────────
+function switchFeat(btn,view){
+  btn.closest('.feat-tabs').querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-objects').style.display  = view==='objects' ?'block':'none';
+  document.getElementById('view-segments').style.display = view==='segments'?'block':'none';
+}
+function pickObj(el){
+  el.closest('.feat-body').querySelectorAll('.obj-row').forEach(r=>r.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ─── RETENTION ACTIONS ──────────────────────────────────────
+const ACTIONS={
+  high:[
+    {
+      ico:'🎁',
+      ttl:'Offer Retention Discount',
+      desc:'Provide 20% loyalty discount on monthly plan for 3 months.'
+    },
+    {
+      ico:'📞',
+      ttl:'Schedule Account Review',
+      desc:'Assign dedicated account manager for outreach within 48h.'
+    },
+    {
+      ico:'🔄',
+      ttl:'Suggest Contract Upgrade',
+      desc:'Incentivize switch from Month-to-Month to Annual contract.'
+    },
+  ],
+
+  medium:[
+    {
+      ico:'📧',
+      ttl:'Send Retention Email',
+      desc:'Recommend personalized offers and engagement campaigns.'
+    },
+    {
+      ico:'⭐',
+      ttl:'Offer Loyalty Benefits',
+      desc:'Encourage continued usage with loyalty rewards.'
+    },
+    {
+      ico:'💬',
+      ttl:'Customer Follow-up',
+      desc:'Schedule proactive support interaction within 7 days.'
+    }
+  ],
+
+  low:[
+    {
+      ico:'⭐',
+      ttl:'Upsell Opportunity',
+      desc:'Stable customer — ideal candidate for premium plan upgrade.'
+    },
+    {
+      ico:'🏅',
+      ttl:'Enroll Loyalty Program',
+      desc:'Maintain engagement and reduce future churn risk.'
+    },
+  ]
+};
+
+// ─── PREDICT ────────────────────────────────────────────────
+function predictChurn(){
+  const tenure   =parseFloat(document.getElementById('in-tenure').value)  ||0;
+  const monthly  =parseFloat(document.getElementById('in-monthly').value) ||0;
+  const total    =parseFloat(document.getElementById('in-total').value)   ||0;
+  const contract =document.getElementById('in-contract').value;
+  const internet =document.getElementById('in-internet').value;
+  const support  =document.getElementById('in-support').value;
+  const payment  =document.getElementById('in-payment').value;
+  const paperless=document.getElementById('in-paperless').value;
+  const products =parseFloat(document.getElementById('in-products').value)||3;
+
+  let s=0.35;
+  if(tenure<12)                s+=.22;
+  if(tenure>48)                s-=.16;
+  if(contract==='month-to-month')s+=.20;
+  if(contract==='two-year')    s-=.20;
+  if(internet==='fiber')       s+=.10;
+  if(internet==='no')          s-=.09;
+  if(support==='no')           s+=.09;
+  if(payment==='electronic')   s+=.11;
+  if(payment==='credit')       s-=.07;
+  if(paperless==='yes')        s+=.06;
+  if(monthly>80)               s+=.08;
+  if(monthly<30)               s-=.07;
+  if(total<500)                s+=.05;
+  if(products>=5)              s-=.09;
+  s=Math.min(.97,Math.max(.04,s));
+
+  const pct=Math.round(s*100);
+
+  let risk='low';
+  let cls='lo';
+
+  if(s >= 0.70){
+    risk='high';
+    cls='hi';
+  }
+  else if(s >= 0.40){
+    risk='medium';
+    cls='med';
+  }
+
+  const pool=ACTIONS[risk];
+  const act=pool[Math.floor(Math.random()*pool.length)];
+
+  const badge=document.getElementById('pop-badge');
+  badge.textContent =
+  risk==='high'
+    ? '⚠️ HIGH RISK'
+    : risk==='medium'
+      ? '🟡 MEDIUM RISK'
+      : '✅ LOW RISK';
+  badge.className='pop-badge '+cls;
+
+  const pctEl=document.getElementById('pop-pct');
+  pctEl.textContent=pct+'%';
+  pctEl.className='pop-pct '+cls;
+
+  document.getElementById('pop-ttl').textContent =
+  risk==='high'
+    ? 'High Churn Risk Detected'
+    : risk==='medium'
+      ? 'Moderate Churn Risk'
+      : 'Customer is Stable';
+  document.getElementById('pop-sub').textContent =
+  risk==='high'
+    ? `This customer has a ${pct}% probability of churning based on LR + RF ensemble model.`
+    : risk==='medium'
+      ? `This customer shows moderate churn indicators with a ${pct}% churn probability.`
+      : `Only a ${pct}% churn probability detected. This customer's retention looks strong.`;
+
+  const bar=document.getElementById('pop-bar');
+  bar.className='pop-bar '+cls;
+  bar.style.width='0%';
+
+  const ac=document.getElementById('pop-action');
+  ac.className='pop-action ' +
+  (risk==='high'
+    ? 'hi-a'
+    : risk==='medium'
+      ? 'med-a'
+      : 'lo-a');
+  document.getElementById('pop-ico').textContent=act.ico;
+  document.getElementById('pop-action-ttl').textContent=act.ttl;
+  document.getElementById('pop-action-desc').textContent=act.desc;
+
+  document.getElementById('popup').classList.add('show');
+  setTimeout(()=>{ bar.style.width=pct+'%'; },80);
+}
+
+function closePopup(e,force){
+  if(force||(e&&e.target===document.getElementById('popup')))
+    document.getElementById('popup').classList.remove('show');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePopup(null,true);});
+</script>
+<script>
+
+// ───────── ANALYTICS DATA ─────────
+
+// Monthly Churn Trend
+new Chart(document.getElementById('churnTrendChart'), {
+    type: 'line',
+    data: {
+        labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+        datasets: [{
+            label: 'Churn %',
+            data: [18,22,19,26,21,17],
+            borderColor: '#e84f4f',
+            backgroundColor: 'rgba(232,79,79,0.12)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 3
+        }]
+    },
+    options: {
+        plugins:{legend:{display:false}},
+        scales:{y:{display:false},x:{grid:{display:false}}}
+    }
+});
+
+// Revenue at Risk
+new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+        labels:['Jan','Feb','Mar','Apr','May','Jun'],
+        datasets:[{
+            data:[12000,15000,13200,17800,16500,14300],
+            backgroundColor:'#b8a8d8',
+            borderRadius:10
+        }]
+    },
+    options:{
+        plugins:{legend:{display:false}},
+        scales:{y:{display:false},x:{grid:{display:false}}}
+    }
+});
+
+// Cohort Table
+const cohorts = [
+['Jan 2024','92%','84%','78%','70%','62%'],
+['Feb 2024','90%','82%','74%','66%','58%'],
+['Mar 2024','91%','80%','73%','65%','57%'],
+];
+
+const cohortBody = document.getElementById('cohort-body');
+
+cohorts.forEach(c=>{
+    cohortBody.innerHTML += `
+    <tr>
+        <td>${c[0]}</td>
+        <td>${c[1]}</td>
+        <td>${c[2]}</td>
+        <td>${c[3]}</td>
+        <td>${c[4]}</td>
+        <td>${c[5]}</td>
+    </tr>
+    `;
+});
+
+// Contract Bars
+const contracts = [
+    {name:'Month-to-Month',val:62,color:'#e84f4f'},
+    {name:'One Year',val:24,color:'#f0b840'},
+    {name:'Two Year',val:14,color:'#2ecc7a'}
+];
+
+const cb = document.getElementById('contract-bars');
+
+contracts.forEach(c=>{
+    cb.innerHTML += `
+    <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:12px">${c.name}</span>
+            <span style="font-size:12px;font-weight:700">${c.val}%</span>
+        </div>
+        <div class="dtrk">
+            <div class="dfill" style="width:${c.val}%;background:${c.color}"></div>
+        </div>
+    </div>
+    `;
+});
+
+</script>
+<script>
+
+// Feature Importance
+const feats = [
+['Contract',92],
+['Tenure',81],
+['MonthlyCharges',74],
+['TechSupport',63],
+['PaymentMethod',52]
+];
+
+const featImp = document.getElementById('feat-imp');
+
+feats.forEach(f=>{
+    featImp.innerHTML += `
+    <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:12px">${f[0]}</span>
+            <span style="font-size:12px;font-weight:700">${f[1]}%</span>
+        </div>
+        <div class="dtrk">
+            <div class="dfill l" style="width:${f[1]}%"></div>
+        </div>
+    </div>
+    `;
+});
+
+// ROC Curve
+new Chart(document.getElementById('rocChart'), {
+    type:'line',
+    data:{
+        labels:[0,0.2,0.4,0.6,0.8,1],
+        datasets:[{
+            data:[0,0.45,0.67,0.82,0.93,1],
+            borderColor:'#6dd4cc',
+            tension:0.3,
+            borderWidth:3,
+            fill:false
+        }]
+    },
+    options:{
+        plugins:{legend:{display:false}},
+        scales:{
+            x:{title:{display:true,text:'False Positive Rate'}},
+            y:{title:{display:true,text:'True Positive Rate'}}
+        }
+    }
+});
+
+</script>
+<script>
+
+// Cluster Cards
+const clusters = [
+{
+name:'Enterprise Users',
+size:'742',
+risk:'Low Risk',
+color:'var(--accent)'
+},
+{
+name:'Streaming Users',
+size:'538',
+risk:'Medium Risk',
+color:'var(--accent2)'
+},
+{
+name:'Low Engagement',
+size:'562',
+risk:'High Risk',
+color:'var(--red)'
+}
+];
+
+const clusterCards = document.getElementById('cluster-cards');
+
+clusters.forEach(c=>{
+clusterCards.innerHTML += `
+<div style="
+background:white;
+padding:22px;
+border-radius:18px;
+box-shadow:var(--sh);
+border-left:5px solid ${c.color}">
+<div style="font-size:12px;color:var(--light)">
+Customer Segment
+</div>
+<div style="font-size:1.3rem;font-weight:700;margin-top:8px">
+${c.name}
+</div>
+<div style="margin-top:12px;font-size:12px;color:var(--mid)">
+${c.size} Customers · ${c.risk}
+</div>
+</div>
+`;
+});
+
+// Segment Table
+const segs = [
+['Cluster A','42 mo','$82','12%','742'],
+['Cluster B','18 mo','$104','38%','538'],
+['Cluster C','7 mo','$56','61%','562']
+];
+
+const segBody = document.getElementById('seg-tbody');
+
+segs.forEach(s=>{
+segBody.innerHTML += `
+<tr>
+<td>${s[0]}</td>
+<td>${s[1]}</td>
+<td>${s[2]}</td>
+<td>${s[3]}</td>
+<td>${s[4]}</td>
+</tr>
+`;
+});
+
+// Cluster Chart
+new Chart(document.getElementById('clusterChart'),{
+type:'doughnut',
+data:{
+labels:['Enterprise','Streaming','Low Engagement'],
+datasets:[{
+data:[742,538,562],
+backgroundColor:[
+'#6dd4cc',
+'#b8a8d8',
+'#e84f4f'
+],
+borderWidth:0
+}]
+},
+options:{
+plugins:{legend:{position:'bottom'}},
+cutout:'70%'
+}
+});
+
+</script>
+<script>
+
+// Notifications
+const notif = [
+'Alert if churn probability > 70%',
+'Daily executive email at 8 AM',
+'Slack alert for enterprise customer churn',
+'Weekly Spark retraining job'
+];
+
+const notifBox = document.getElementById('notif-rules');
+
+notif.forEach(n=>{
+notifBox.innerHTML += `
+<div style="
+padding:14px;
+border-radius:12px;
+background:#f7f8fc;
+font-size:12px;
+color:var(--mid);
+border:1px solid var(--border)">
+✅ ${n}
+</div>
+`;
+});
+
+// Model Versions
+const versions = [
+['rf_churn_v3.pkl','ACTIVE','#2ecc7a'],
+['lr_churn_v2.pkl','STANDBY','#f0b840'],
+['xgb_experiment.pkl','TESTING','#b8a8d8']
+];
+
+const mv = document.getElementById('model-versions');
+
+versions.forEach(v=>{
+mv.innerHTML += `
+<div style="
+background:#1f1f22;
+padding:14px;
+border-radius:12px;
+display:flex;
+justify-content:space-between;
+align-items:center;">
+<div>
+<div style="font-size:12px;color:#fff">${v[0]}</div>
+<div style="font-size:10px;color:#666;margin-top:2px">
+Production Model
+</div>
+</div>
+<div style="
+font-size:10px;
+font-weight:700;
+color:${v[2]}">
+${v[1]}
+</div>
+</div>
+`;
+});
+
+</script>
+</body>
+</html>
